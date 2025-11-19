@@ -1,0 +1,16 @@
+{
+  "Headers": {
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "X-Frame-Options": "DENY",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin"
+  },
+  "RewriteHttpToHttps": true,
+  "EnableRemoveServerHeader": true,
+  "HealthCheckPath": "/",
+  "TlsScan": {
+    "Enabled": true,
+    "Host": "iislock.localtest.me",
+    "Port": 443
+  }
+}
