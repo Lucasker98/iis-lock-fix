@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8' />
+  <title>IIS Lock & Fix - Baseline chart</title>
+  <script src='https://cdn.jsdelivr.net/npm/chart.js'></script>
+</head>
+<body style='font-family: Arial, sans-serif; margin: 40px;'>
+  <h2>IIS Lock & Fix - Baseline issues (before hardening)</h2>
+  <p>This chart shows the number of findings before applying any hardening.</p>
+  <canvas id='baselineChart' width='700' height='400'></canvas>
+  <script>
+    const ctx = document.getElementById('baselineChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['HTTP issues (before)', 'TLS issues (before)'],
+        datasets: [{
+          label: 'Number of issues',
+          data: [7, 0]
+        }]
+      },
+      options: {
+        responsive: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0,
+              stepSize: 1
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
