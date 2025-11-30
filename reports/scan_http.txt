@@ -1,0 +1,9 @@
+=== Report (before) ===
+[X] HSTS: Not configured
+[X] Clickjacking: Vulnerable
+[X] X-Content-Type-Options: Missing
+[X] Referrer-Policy: Missing
+[X] Content-Security-Policy: Missing
+[X] Server header: Visible (Microsoft-IIS/10.0)
+[X] X-Powered-By: Visible (ASP.NET)
+

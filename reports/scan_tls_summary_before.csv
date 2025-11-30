@@ -1,0 +1,4 @@
+﻿"Phase","Category","Check","Status","IsIssue","Details","Description"
+"before","TLS","AnyTlsSupported","NO","1","No TLS detected (Plain HTTP)","Without TLS (HTTPS), all data is sent as plain text and can be stolen."
+"before","TLS","WeakProtocolsEnabled","YES","1","CRITICAL: Plain Text (No Encryption)","Using old encryption (SSL/TLS 1.0) allows attackers to spy on data. Plain text is even worse."
+"before","TLS","ModernTlsPresent","NO","1","Modern TLS missing","Modern encryption (TLS 1.2/1.3) is required for secure communication."

@@ -1,8 +1,0 @@
-﻿
- CHECKING CONNECTIVITY TO SERVER(S)
- ----------------------------------
-
-   iislock.localtest.me:8080 => ERROR: TLS probing failed: could not find a TLS version and cipher suite supported by the server; discarding scan.
-
- SCANS COMPLETED IN 0.39437 S
- ----------------------------

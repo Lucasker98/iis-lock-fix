@@ -1,0 +1,8 @@
+﻿"Phase","Category","Check","Status","IsIssue","Details","Description"
+"before","HTTP","HSTS","Missing","1","Not configured","Ensures users always connect via secure HTTPS, preventing attacks that strip security."
+"before","HTTP","Clickjacking","Missing","1","Vulnerable","Prevents hackers from hiding your website inside a fake frame to trick users into clicking buttons."
+"before","HTTP","X-Content-Type-Options","Missing","1","Missing","Stops the browser from guessing the file type, preventing malicious scripts disguised as images."
+"before","HTTP","Referrer-Policy","Missing","1","Missing","Controls how much user data is sent to other websites when clicking links."
+"before","HTTP","Content-Security-Policy","Missing","1","Missing","A powerful shield that prevents malicious scripts (XSS) from running on your site."
+"before","HTTP","Server header","Issue Found","1","Visible (Microsoft-IIS/10.0)","Reveals exactly which software version you run, making it easier for hackers to find specific exploits."
+"before","HTTP","X-Powered-By","Issue Found","1","Visible (ASP.NET)","Reveals the technology (e.g., ASP.NET) used, helping attackers tailor their attacks."
