@@ -1,31 +1,321 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IIS Lock & Fix Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Heebo', Arial, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e8e8e8;
+            line-height: 1.8;
+            overflow-x: hidden;
+        }
+
+        /* Animated background particles effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(138, 43, 226, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(0, 255, 136, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 30px;
+        }
+
+        /* Hero Header */
+        .hero-header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        .logo-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #00d4ff, #8a2be2, #00ff88);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient 4s ease infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes gradient {
+
+            0%,
+            100% {
+                background-position: 0% center;
+            }
+
+            50% {
+                background-position: 100% center;
+            }
+        }
+
+        .subtitle {
+            color: #a8a8b3;
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 25px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .card:hover::before {
+            left: 100%;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 212, 255, 0.3);
+            box-shadow:
+                0 20px 40px rgba(0, 0, 0, 0.3),
+                0 0 30px rgba(0, 212, 255, 0.1);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .card h2 {
+            font-size: 1.3rem;
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .card p {
+            color: #b8b8c3;
+            font-size: 1rem;
+            font-weight: 300;
+        }
+
+        /* Feature Tags */
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .tag {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(138, 43, 226, 0.2));
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            color: #00d4ff;
+            transition: all 0.3s ease;
+        }
+
+        .tag:hover {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.4), rgba(138, 43, 226, 0.4));
+            transform: scale(1.05);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer p {
+            color: #888;
+            font-size: 0.95rem;
+        }
+
+        .footer .heart {
+            color: #ff4757;
+            animation: pulse 1.5s ease infinite;
+            display: inline-block;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 10px 20px;
+            border-radius: 30px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #00ff88;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: blink 2s ease infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .container {
+                padding: 30px 20px;
+            }
+
+            .card {
+                padding: 25px;
+            }
+        }
+    </style>
 </head>
+
 <body>
-    <h1>ברוך הבא לאתר הדמו של IIS Lock & Fix</h1>
+    <div class="container">
+        <!-- Hero Section -->
+        <header class="hero-header">
+            <div class="logo-icon">🛡️</div>
+            <h1>IIS Lock & Fix</h1>
+            <p class="subtitle">מערכת חכמה להקשחת ואבטחת שרתי IIS</p>
+            <div class="status-badge">
+                <span class="status-dot"></span>
+                <span>המערכת פעילה שלב התחלתי</span>
+            </div>
+        </header>
 
-    <p>
-        זהו אתר ניסוי שנבנה במיוחד עבור ביצוע בדיקות אבטחה כחלק מפרויקט הגמר במערכות מידע
-        ובהקשחת שרתים. האתר מאפשר לנו לבצע סימולציות, בדיקות עומק וכלי אנליזה שונים על מנת 
-        לאתר חולשות אפשריות ולשפר את רמת ההגנה.
-    </p>
+        <!-- Cards Section -->
+        <main>
+            <article class="card">
+                <div class="card-icon">🔬</div>
+                <h2>אתר ניסוי ובדיקות</h2>
+                <p>
+                    זהו אתר ניסוי שנבנה במיוחד עבור ביצוע בדיקות אבטחה כחלק מפרויקט הגמר במערכות מידע
+                    ובהקשחת שרתים. האתר מאפשר לנו לבצע סימולציות, בדיקות עומק וכלי אנליזה שונים על מנת
+                    לאתר חולשות אפשריות ולשפר את רמת ההגנה.
+                </p>
+            </article>
 
-    <p>
-        המערכת IIS Lock & Fix מיועדת לזהות תצורות לא תקינות, לדווח על בעיות,
-        ולהציע פתרונות חכמים להקשחת שרתי IIS בצורה אוטומטית ופשוטה.
-    </p>
+            <article class="card">
+                <div class="card-icon">⚙️</div>
+                <h2>זיהוי ותיקון אוטומטי</h2>
+                <p>
+                    המערכת IIS Lock & Fix מיועדת לזהות תצורות לא תקינות, לדווח על בעיות,
+                    ולהציע פתרונות חכמים להקשחת שרתי IIS בצורה אוטומטית ופשוטה.
+                </p>
+            </article>
 
-    <p>
-        האתר שתראה כאן משמש כ"מעבדה" — מקום בו ניתן לבדוק הגדרות, לנתח תעבורה,
-        ולבצע מגוון בדיקות כמו אימות שימוש ב-HTTPS, בדיקות TLS, חשיפת נתיבים, 
-        והצלבת נתונים מול סטנדרטים מוכרים בעולם האבטחה.
-    </p>
+            <article class="card">
+                <div class="card-icon">🧪</div>
+                <h2>מעבדת אבטחה</h2>
+                <p>
+                    האתר שמוצג כאן משמש כ"מעבדה" — מקום בו ניתן לבדוק הגדרות, לנתח תעבורה,
+                    ולבצע מגוון בדיקות כמו אימות שימוש ב-HTTPS, בדיקות TLS, חשיפת נתיבים,
+                    והצלבת נתונים מול סטנדרטים מוכרים בעולם האבטחה.
+                </p>
+                <div class="tags">
+                    <span class="tag">HTTPS</span>
+                    <span class="tag">TLS</span>
+                    <span class="tag">Security Headers</span>
+                    <span class="tag">Path Analysis</span>
+                </div>
+            </article>
+        </main>
 
-    <p>
-        תודה שגלשת — המשך הפיתוח בדרך, והמערכת ממשיכה להתעדכן ולהתרחב מדי יום.
-    </p>
+        <!-- Footer -->
+        <footer class="footer">
+            <p>תודה שגלשת — IIS Lock & Fix </p>
+            <p style="margin-top: 10px; font-size: 0.85rem;">המערכת ממשיכה להתעדכן ולהתרחב מדי יום</p>
+        </footer>
+    </div>
 </body>
+
 </html>
