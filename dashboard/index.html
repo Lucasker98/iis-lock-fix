@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IISLock&amp;Fix — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --primary:   #1e293b;
+  --secondary: #3b82f6;
+  --bg:        #f1f5f9;
+  --card:      #ffffff;
+  --text:      #334155;
+  --muted:     #64748b;
+  --border:    #e2e8f0;
+  --danger:    #ef4444;
+  --success:   #10b981;
+  --warn:      #f59e0b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── Header ── */
+.hdr{background:var(--primary);color:#fff;padding:14px 0;position:sticky;top:0;z-index:100;
+     box-shadow:0 4px 6px -1px rgba(0,0,0,.15)}
+.hdr-inner{max-width:1200px;margin:0 auto;padding:0 24px;display:flex;
+           justify-content:space-between;align-items:center}
+.brand{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.brand span{color:var(--secondary)}
+.status-pill{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 14px;
+             border-radius:20px;background:rgba(255,255,255,.08);color:#cbd5e1}
+.dot{width:8px;height:8px;border-radius:50%;background:#475569;flex-shrink:0}
+.dot.on {background:var(--success);animation:blink 1.5s ease infinite}
+.dot.err{background:var(--danger)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Layout ── */
+.wrap{max-width:1200px;margin:28px auto;padding:0 24px}
+
+/* ── Action bar ── */
+.action-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;
+     font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border:none;
+     transition:all .15s ease;white-space:nowrap;line-height:1}
+.btn:disabled{opacity:.38;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.btn:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.16)}
+.btn:not(:disabled):active{transform:none}
+.btn-blue   {background:var(--secondary);color:#fff}
+.btn-green  {background:var(--success);color:#fff}
+.btn-red    {background:var(--danger);color:#fff}
+.btn-outline{background:var(--card);color:var(--text);border:1.5px solid var(--border)}
+.btn-ghost  {background:transparent;color:var(--muted);border:1px solid var(--border);
+             margin-left:auto}
+.spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;
+      border-radius:50%;animation:rot .65s linear infinite;display:inline-block;flex-shrink:0}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ── Alert ── */
+.alert{padding:11px 16px;border-radius:8px;font-size:13px;font-weight:500;
+       margin-bottom:18px;display:none;animation:fadeIn .2s ease}
+.alert.show{display:block}
+.alert-ok {background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}
+.alert-err{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+/* ── Score grid ── */
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px}
+@media(max-width:640px){.score-grid{grid-template-columns:1fr}}
+.scard{background:var(--card);border-radius:12px;padding:24px;
+       box-shadow:0 1px 3px rgba(0,0,0,.07);display:flex;gap:20px;align-items:center;
+       border-left:4px solid #cbd5e1;transition:border-color .4s}
+.scard.good{border-left-color:var(--success)}
+.scard.warn{border-left-color:var(--warn)}
+.scard.bad {border-left-color:var(--danger)}
+.scard.blue{border-left-color:var(--secondary)}
+.sinfo{flex:1;min-width:0}
+.sphase{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+        color:var(--muted);margin-bottom:8px}
+.snum{font-size:52px;font-weight:800;line-height:1;color:#94a3b8;margin-bottom:5px;
+      transition:color .4s}
+.ssub {font-size:13px;color:var(--muted)}
+.stime{font-size:11px;color:#cbd5e1;margin-top:3px}
+.chart-box{width:96px;height:96px;flex-shrink:0}
+
+/* ── Findings table ── */
+.tcard{background:var(--card);border-radius:12px;overflow:hidden;
+       box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:22px}
+.thead-bar{padding:16px 24px;border-bottom:1px solid var(--border);font-weight:600;
+           color:var(--primary);font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.thead-bar small{font-size:12px;font-weight:400;color:var(--muted)}
+table{width:100%;border-collapse:collapse}
+th{padding:9px 20px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;
+   letter-spacing:.7px;color:var(--muted);background:#f8fafc;border-bottom:1px solid var(--border)}
+td{padding:14px 20px;border-bottom:1px solid #f8fafc;font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.ri td:first-child{border-left:3px solid var(--danger)}
+tr.ro td:first-child{border-left:3px solid var(--success)}
+.cname{font-weight:600;margin-bottom:2px}
+.cdesc{font-size:11px;color:var(--muted)}
+.ctag{background:#e2e8f0;color:var(--muted);padding:2px 7px;border-radius:4px;
+      font-size:10px;font-weight:700;text-transform:uppercase}
+.badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.2px;white-space:nowrap}
+.bp{background:#d1fae5;color:#065f46}
+.bf{background:#fee2e2;color:#991b1b}
+.be{background:#f1f5f9;color:#94a3b8}
+.du{color:var(--success);font-size:17px;font-weight:800}
+.ds{color:#94a3b8;font-weight:700}
+.dd{color:var(--danger);font-size:17px;font-weight:800}
+.mono{font-family:'Consolas','Monaco',monospace;font-size:12px;color:var(--muted)}
+
+/* ── Header enhancements ── */
+.hdr-brand-group{display:flex;flex-direction:column;gap:3px}
+.brand-sub{font-size:10.5px;color:rgba(255,255,255,.45);font-weight:400;letter-spacing:.2px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.hdr-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.65);letter-spacing:.4px;white-space:nowrap}
+.hdr-safe{background:rgba(16,185,129,.18);color:#6ee7b7}
+.safe-bar{background:rgba(16,185,129,.07);border-bottom:1px solid rgba(16,185,129,.18);color:#065f46;font-size:11px;text-align:center;padding:5px 16px;letter-spacing:.2px}
+
+/* ── Evidence modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal-box{background:#fff;border-radius:14px;width:min(860px,100%);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.35)}
+.modal-hdr{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-hdr h3{font-size:14px;font-weight:700;color:var(--primary)}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:0 2px}
+.modal-body{padding:20px 24px;overflow-y:auto}
+.ev-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.ev-grid.ev-single{grid-template-columns:1fr}
+.ev-col-hdr{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:5px 10px;border-radius:5px;margin-bottom:8px}
+.ev-before{background:#fee2e2;color:#991b1b}
+.ev-after{background:#d1fae5;color:#065f46}
+.ev-row{padding:4px 8px;border-radius:4px;margin-bottom:3px;font-family:'Consolas','Monaco',monospace;font-size:12px;background:#f8fafc}
+.ev-row.ev-removed{background:#fff1f2}
+.ev-row.ev-added{background:#f0fdf4}
+.ev-row.ev-changed{background:#fffbeb}
+.ev-key{font-weight:600;color:var(--text)}
+.ev-val{color:var(--muted)}
+.ev-tag-removed{color:#ef4444;font-weight:700}
+.ev-tag-added{color:#10b981;font-weight:700}
+.ev-tag-missing{color:#94a3b8;font-style:italic}
+.ev-note{font-size:11px;color:#94a3b8;margin-top:14px;text-align:center;font-style:italic}
+
+/* ── Log panel ── */
+.log-card{background:#0f172a;border-radius:12px;overflow:hidden}
+.log-hdr{padding:12px 18px;background:#1e293b;font-size:11px;font-weight:700;
+         text-transform:uppercase;letter-spacing:1px;color:#475569;
+         display:flex;justify-content:space-between;align-items:center}
+.log-clr{font-size:11px;color:#475569;cursor:pointer;background:none;border:none;
+         font-family:inherit;padding:0}
+.log-clr:hover{color:#94a3b8}
+.log-body{padding:14px 18px;height:200px;overflow-y:auto;font-family:'Consolas','Monaco',monospace;
+          font-size:12px;line-height:1.7}
+.ll    {color:#64748b}
+.ll.er {color:#f87171}
+.ll.wn {color:#fbbf24}
+.ll.hi {color:#67e8f9}
+.lp    {color:#334155;font-style:italic}
+
+/* ── Improvement meter ── */
+.meter-wrap{background:var(--card);border-radius:12px;padding:18px 24px;margin-bottom:22px;
+            box-shadow:0 1px 3px rgba(0,0,0,.07);display:none}
+.meter-wrap.show{display:block}
+.meter-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.meter-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.meter-scores{font-size:12px;color:var(--muted);margin-left:8px}
+.meter-delta{font-size:22px;font-weight:800;color:var(--success)}
+.meter-track{background:#e2e8f0;border-radius:20px;height:10px;overflow:hidden}
+.meter-fill{background:linear-gradient(90deg,#10b981,#34d399);height:100%;border-radius:20px;width:0%;transition:width .6s ease}
+
+/* ── Explain popover ── */
+.info-btn{background:none;border:none;cursor:pointer;color:#94a3b8;font-size:14px;padding:0 3px;
+          line-height:1;vertical-align:middle;transition:color .15s;flex-shrink:0}
+.info-btn:hover{color:var(--secondary)}
+.xpop{position:fixed;z-index:900;background:#1e293b;color:#e2e8f0;border-radius:10px;
+      padding:14px 16px;width:280px;box-shadow:0 12px 32px rgba(0,0,0,.35);
+      font-size:12px;line-height:1.55;display:none}
+.xpop.show{display:block}
+.xpop-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;padding-bottom:7px;
+            border-bottom:1px solid rgba(255,255,255,.1)}
+.xpop-row{margin-bottom:5px}
+.xpop-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+          color:#64748b;display:block;margin-bottom:1px}
+.xpop-val{color:#cbd5e1}
+
+/* ── Architecture hint ── */
+.arch-hint{position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--border);
+           border-radius:10px;padding:12px 16px;font-size:11px;color:var(--muted);
+           box-shadow:0 4px 16px rgba(0,0,0,.08);z-index:50;line-height:1.85}
+.arch-hint strong{display:block;font-size:10px;font-weight:700;text-transform:uppercase;
+                  letter-spacing:1px;color:var(--primary);margin-bottom:5px}
+.arch-hint span{display:block;color:#10b981}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-brand-group">
+      <div class="brand">IISLock<span>&amp;</span>Fix</div>
+      <div class="brand-sub">Scan &rarr; Fix &rarr; Verify &rarr; Rollback &mdash; fully automated IIS security hardening</div>
+    </div>
+    <div class="hdr-right">
+      <span class="hdr-badge">&#9881; Policy Engine</span>
+      <span class="hdr-badge hdr-safe">&#10003; Reversible Hardening</span>
+      <div class="status-pill">
+        <div class="dot" id="dot"></div>
+        <span id="status-txt">Connecting...</span>
+      </div>
+    </div>
+  </div>
+</header>
+<div class="safe-bar">All changes are snapshot-backed &mdash; reversible within seconds</div>
+
+<div class="wrap">
+
+  <!-- Action bar -->
+  <div class="action-bar">
+    <button class="btn btn-blue"    id="btn-scan"     onclick="doScan()"     disabled>&#9654; Run Baseline Scan</button>
+    <button class="btn btn-green"   id="btn-apply"    onclick="doApply()"    disabled>&#9889; Apply Fixes</button>
+    <button class="btn btn-red"     id="btn-rollback" onclick="doRollback()" disabled>&#8617; Rollback</button>
+    <button class="btn btn-outline" id="btn-report"   onclick="doReport()"   disabled>&#128202; View Report</button>
+    <button class="btn btn-outline" id="btn-evidence" onclick="showEvidence()" disabled>&#128203; Raw Evidence</button>
+    <button class="btn btn-ghost"   id="btn-reset"    onclick="doReset()"   >&#8634; Reset </button>
+  </div>
+
+  <!-- Alert -->
+  <div class="alert" id="alert"></div>
+
+  <!-- Improvement meter -->
+  <div class="meter-wrap" id="meter">
+    <div class="meter-top">
+      <div>
+        <span class="meter-label">Security Improvement</span>
+        <span class="meter-scores" id="meter-scores"></span>
+      </div>
+      <div class="meter-delta" id="meter-delta"></div>
+    </div>
+    <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
+  </div>
+
+  <!-- Score cards -->
+  <div class="score-grid">
+    <div class="scard" id="sc-before">
+      <div class="sinfo">
+        <div class="sphase">Before Hardening</div>
+        <div class="snum"  id="bscore">—</div>
+        <div class="ssub"  id="bsub"  >Not scanned yet</div>
+        <div class="stime" id="btime" ></div>
+      </div>
+      <div class="chart-box"><canvas id="ch-before"></canvas></div>
+    </div>
+    <div class="scard blue" id="sc-after">
+      <div class="sinfo">
+        <div class="sphase">After Hardening</div>
+        <div class="snum"  id="ascore">—</div>
+        <div class="ssub"  id="asub"  >Apply fixes to see result</div>
+        <div class="stime" id="atime" ></div>
+      </div>
+      <div class="chart-box"><canvas id="ch-after"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Findings table -->
+  <div class="tcard">
+    <div class="thead-bar">
+      Security Findings
+      <small id="tsub">No data yet</small>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:72px">Cat.</th>
+          <th>Check</th>
+          <th style="width:105px">Before</th>
+          <th style="width:105px">After</th>
+          <th style="width:52px">&#916;</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:36px 20px">
+          Run a baseline scan to populate this table
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Log -->
+  <div class="log-card">
+    <div class="log-hdr">
+      Activity Log
+      <button class="log-clr" onclick="clearLog()">Clear</button>
+    </div>
+    <div class="log-body" id="log"><div class="lp">Waiting for activity...</div></div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+const DESCS = {
+  'HSTS':                   'Forces browsers to use HTTPS only',
+  'Clickjacking':           'Prevents iframe embedding attacks',
+  'X-Content-Type-Options': 'Blocks MIME-type sniffing exploits',
+  'Referrer-Policy':        'Controls referrer data sent externally',
+  'Content-Security-Policy':'Restricts content sources, blocks XSS',
+  'Server header':          'IIS version disclosure to attackers',
+  'X-Powered-By':           'ASP.NET version disclosure',
+  'AnyTlsSupported':        'HTTPS / TLS must be enabled',
+  'WeakProtocolsEnabled':   'Outdated SSL/TLS protocols must be off',
+  'ModernTlsPresent':       'TLS 1.2 or 1.3 must be available'
+};
+
+const checkExplanations = {
+  'HSTS': {
+    title: 'HSTS — Strict Transport Security',
+    what:  'Strict-Transport-Security header is not configured.',
+    risk:  'Attackers can downgrade HTTPS connections to plain HTTP and intercept all traffic.',
+    fix:   'Added Strict-Transport-Security header enforcing HTTPS for all future visits.'
+  },
+  'Clickjacking': {
+    title: 'Clickjacking Protection',
+    what:  'No X-Frame-Options or frame-ancestors CSP directive is set.',
+    risk:  'Malicious sites can embed your page in a hidden iframe and trick users into unintended actions.',
+    fix:   'Added X-Frame-Options: DENY preventing the page from being framed by any origin.'
+  },
+  'X-Content-Type-Options': {
+    title: 'MIME-Type Sniffing',
+    what:  'X-Content-Type-Options header is missing.',
+    risk:  'Browsers may guess file types and execute malicious scripts disguised as images.',
+    fix:   'Added X-Content-Type-Options: nosniff to enforce strict MIME-type handling.'
+  },
+  'Referrer-Policy': {
+    title: 'Referrer Policy',
+    what:  'No Referrer-Policy header is configured.',
+    risk:  'Full URLs with tokens or PII are sent to third-party sites when users click links.',
+    fix:   'Added Referrer-Policy: no-referrer-when-downgrade to limit data leakage.'
+  },
+  'Content-Security-Policy': {
+    title: 'Content Security Policy (CSP)',
+    what:  'No Content-Security-Policy header is set.',
+    risk:  'XSS attacks can inject and execute arbitrary JavaScript in users\' browsers.',
+    fix:   'Added a CSP header restricting scripts to trusted sources only.'
+  },
+  'Server header': {
+    title: 'Server Version Disclosure',
+    what:  'The Server response header reveals the web server software and version.',
+    risk:  'Exposes the exact IIS version, enabling targeted CVE exploitation.',
+    fix:   'Removed the Server header to prevent software fingerprinting.'
+  },
+  'X-Powered-By': {
+    title: 'Technology Stack Disclosure',
+    what:  'X-Powered-By header reveals the ASP.NET framework version.',
+    risk:  'Discloses the backend stack, giving attackers a specific attack surface.',
+    fix:   'Removed X-Powered-By header to prevent technology fingerprinting.'
+  },
+  'AnyTlsSupported': {
+    title: 'TLS / HTTPS Not Enabled',
+    what:  'No TLS encryption is detected on the target host.',
+    risk:  'All traffic is plain text — passwords, tokens, and data are fully visible on the network.',
+    fix:   'TLS must be enabled and a valid certificate bound to the site in IIS.'
+  },
+  'WeakProtocolsEnabled': {
+    title: 'Weak Protocol — SSL/TLS 1.0/1.1',
+    what:  'Outdated SSL or early TLS protocol versions are still enabled.',
+    risk:  'POODLE, BEAST, and DROWN attacks exploit these old protocols to decrypt traffic.',
+    fix:   'Disabled SSL 2.0/3.0, TLS 1.0/1.1 via Windows Schannel registry settings.'
+  },
+  'ModernTlsPresent': {
+    title: 'Modern TLS Not Available',
+    what:  'TLS 1.2 or TLS 1.3 is not detected on the server.',
+    risk:  'Without modern TLS, PFS cipher suites and strong encryption are unavailable.',
+    fix:   'Enabled TLS 1.2 and TLS 1.3 in the Windows Schannel registry settings.'
+  }
+};
+
+let S = { before: null, after: null, hasSnapshot: false };
+let busy = false;
+let charts = {};
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  mkChart('before');
+  mkChart('after');
+  loadStatus();
+});
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+function mkChart(id) {
+  if (charts[id]) { charts[id].destroy(); charts[id] = null; }
+  const ctx = document.getElementById('ch-' + id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels: ['Secure','Issues'],
+            datasets: [{ data: [0, 1], backgroundColor: ['#e2e8f0','#e2e8f0'],
+                         borderWidth: 0, hoverOffset: 0 }] },
+    options: { responsive: true, maintainAspectRatio: true, cutout: '68%',
+               plugins: { legend: { display: false }, tooltip: { enabled: false } },
+               animation: { duration: 500 } }
+  });
+}
+
+function setChart(id, pass, fail) {
+  const r = pass / Math.max(pass + fail, 1);
+  const col = r >= .8 ? '#10b981' : r >= .5 ? '#f59e0b' : '#ef4444';
+  const c = charts[id];
+  c.data.datasets[0].data             = [pass, fail];
+  c.data.datasets[0].backgroundColor  = [col, '#f1f5f9'];
+  c.update();
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function api(method, path) {
+  const r = await fetch(path, { method });
+  if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+  return r.json();
+}
+
+async function loadStatus() {
+  try {
+    const d = await api('GET', '/api/status');
+    absorb(d);
+    setHeader('on', 'Dashboard Ready');
+  } catch(e) {
+    setHeader('err', 'Cannot connect — is Start-Dashboard.ps1 running?');
+    document.getElementById('btn-scan').disabled = false;
+  }
+}
+
+function absorb(d) {
+  S.before      = d.before      || null;
+  S.after       = d.after       || null;
+  S.hasSnapshot = d.hasSnapshot || false;
+  refreshCards();
+  refreshTable();
+  refreshBtns();
+  if (d.logLines && d.logLines.length) appendLog(d.logLines);
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+async function doScan() {
+  await run('btn-scan', 'POST', '/api/scan/before', d => {
+    S.before = d.state;
+    toast('ok', `Baseline captured — Score: ${d.state.score}/10`);
+  });
+}
+
+async function doApply() {
+  await run('btn-apply', 'POST', '/api/apply', d => {
+    S.after = d.state;
+    S.hasSnapshot = true;
+    const delta = (d.state.score - (S.before ? S.before.score : 0)).toFixed(1);
+    toast('ok', `System hardened successfully — Score: ${d.state.score}/10  (+${delta})`);
+  });
+}
+
+async function doRollback() {
+  if (!confirm('Restore the previous configuration snapshot?')) return;
+  await run('btn-rollback', 'POST', '/api/rollback', d => {
+    S.after = d.state;
+    toast('ok', 'System restored to previous state');
+  });
+}
+
+async function doReport() {
+  try { await api('GET', '/api/report'); }
+  catch(e) { toast('err', 'Could not open report: ' + e.message); }
+}
+
+async function doReset() {
+  if (!confirm('Reset all scan data and remove web.config?\nThis returns the system to its insecure baseline.')) return;
+  await run('btn-reset', 'POST', '/api/reset', () => {
+    S = { before: null, after: null, hasSnapshot: false };
+    mkChart('before');
+    mkChart('after');
+    refreshCards();
+    refreshTable();
+    clearLog();
+    toast('ok', ' reset — ready for fresh baseline scan');
+  });
+}
+
+async function run(btnId, method, path, onOk) {
+  if (busy) return;
+  busy = true;
+  clearToast();
+  refreshBtns();
+
+  const btn  = document.getElementById(btnId);
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spin"></span> Running...';
+  btn.disabled  = true;
+  clearLog();
+
+  try {
+    const d = await api(method, path);
+    if (d.log && d.log.length) appendLog(d.log);
+    if (d.ok === false) {
+      toast('err', d.error || 'Operation failed');
+    } else {
+      onOk(d);
+      refreshCards();
+      refreshTable();
+    }
+  } catch(e) {
+    toast('err', 'Request failed: ' + e.message);
+  } finally {
+    busy = false;
+    btn.innerHTML = orig;
+    refreshBtns();
+  }
+}
+
+// ── UI refreshes ──────────────────────────────────────────────────────────────
+function refreshCards() {
+  updateCard('before', S.before);
+  updateCard('after',  S.after);
+  refreshMeter();
+}
+
+function updateCard(phase, data) {
+  const pre = phase === 'before' ? 'b' : 'a';
+  const num  = document.getElementById(pre + 'score');
+  const sub  = document.getElementById(pre + 'sub');
+  const tim  = document.getElementById(pre + 'time');
+  const card = document.getElementById('sc-' + phase);
+
+  card.className = 'scard';
+
+  if (!data) {
+    num.textContent  = '—';
+    num.style.color  = '#94a3b8';
+    sub.textContent  = phase === 'before' ? 'Not scanned yet' : 'Apply fixes to see result';
+    tim.textContent  = '';
+    mkChart(phase);
+    if (phase === 'after') card.classList.add('blue');
+    return;
+  }
+
+  const r   = data.score / 10;
+  const col = r >= .8 ? '#10b981' : r >= .5 ? '#f59e0b' : '#ef4444';
+  const cls = r >= .8 ? 'good'    : r >= .5 ? 'warn'    : 'bad';
+
+  card.classList.add(cls);
+  num.textContent  = data.score + '/10';
+  num.style.color  = col;
+  sub.textContent  = data.issueCount + ' issue' + (data.issueCount !== 1 ? 's' : '') + ' found';
+  tim.textContent  = 'Scanned at ' + new Date(data.capturedAt).toLocaleTimeString();
+  setChart(phase, data.totalChecks - data.issueCount, data.issueCount);
+}
+
+function refreshTable() {
+  const tbody = document.getElementById('tbody');
+  const tsub  = document.getElementById('tsub');
+  const src   = S.after || S.before;
+
+  if (!src) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:36px 20px">Run a baseline scan to populate this table</td></tr>';
+    tsub.textContent = 'No data yet';
+    return;
+  }
+
+  const bMap = {}, aMap = {};
+  if (S.before && S.before.checks) S.before.checks.forEach(c => bMap[c.Check] = c);
+  if (S.after  && S.after.checks)  S.after.checks.forEach( c => aMap[c.Check] = c);
+
+  tsub.textContent = S.after
+    ? 'Before vs After comparison — ' + S.before.issueCount + ' → ' + S.after.issueCount + ' issues'
+    : 'Baseline — ' + S.before.issueCount + ' issues detected';
+
+  tbody.innerHTML = src.checks.map(ck => {
+    const b = bMap[ck.Check], a = aMap[ck.Check];
+    const cur = S.after ? a : b;
+    const rowCls = cur && cur.IsIssue == 1 ? 'ri' : 'ro';
+
+    const badge = x => !x ? '<span class="badge be">—</span>'
+                           : x.IsIssue == 1 ? '<span class="badge bf">FAILED</span>'
+                                            : '<span class="badge bp">SECURE</span>';
+    let delta = '<span class="ds">—</span>';
+    if (b && a) {
+      if (b.IsIssue == 1 && a.IsIssue == 0) delta = '<span class="du">&#9650;</span>';
+      else if (b.IsIssue == 0 && a.IsIssue == 1) delta = '<span class="dd">&#9660;</span>';
+    }
+
+    const det = (a || b || {}).Details || '';
+    const desc = DESCS[ck.Check] || '';
+    const infoBtn = checkExplanations[ck.Check]
+      ? `<button class="info-btn" onclick="showExplain('${ck.Check}',this)" title="Explain this issue">&#9432;</button>`
+      : '';
+
+    return `<tr class="${rowCls}">
+      <td><span class="ctag">${ck.Category}</span></td>
+      <td><div style="display:flex;align-items:center;gap:6px"><div><div class="cname">${ck.Check}</div><div class="cdesc">${desc}</div></div>${infoBtn}</div></td>
+      <td>${badge(b)}</td>
+      <td>${badge(a)}</td>
+      <td>${delta}</td>
+      <td class="mono">${det}</td>
+    </tr>`;
+  }).join('');
+}
+
+function refreshBtns() {
+  q('btn-scan').disabled     = busy;
+  q('btn-apply').disabled    = busy || !S.before;
+  q('btn-rollback').disabled = busy || !S.hasSnapshot;
+  q('btn-report').disabled   = busy || (!S.before && !S.after);
+  q('btn-evidence').disabled = busy || (!S.before && !S.after);
+  q('btn-reset').disabled    = busy;
+}
+
+// ── Log ───────────────────────────────────────────────────────────────────────
+function appendLog(lines) {
+  const box = document.getElementById('log');
+  const ph  = box.querySelector('.lp');
+  if (ph) ph.remove();
+  (Array.isArray(lines) ? lines : [lines]).forEach(l => {
+    const d = document.createElement('div');
+    d.className = 'll' + (l.includes('[ERROR]') ? ' er' : l.includes('[WARN]') ? ' wn' : l.includes('===') ? ' hi' : '');
+    d.textContent = l;
+    box.appendChild(d);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('log').innerHTML = '<div class="lp">Waiting for activity...</div>';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(type, msg) {
+  const el = document.getElementById('alert');
+  el.className = 'alert alert-' + (type === 'ok' ? 'ok' : 'err') + ' show';
+  el.textContent = msg;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 6000);
+}
+function clearToast() { document.getElementById('alert').classList.remove('show'); }
+
+// ── Header status ─────────────────────────────────────────────────────────────
+function setHeader(type, text) {
+  const d = document.getElementById('dot');
+  d.className = 'dot' + (type === 'on' ? ' on' : type === 'err' ? ' err' : '');
+  document.getElementById('status-txt').textContent = text;
+}
+
+// ── Improvement meter ─────────────────────────────────────────────────────────
+function refreshMeter() {
+  const wrap = q('meter');
+  if (!S.before || !S.after) { wrap.classList.remove('show'); return; }
+  const b   = S.before.score, a = S.after.score;
+  const delta = (a - b).toFixed(1);
+  const pct   = Math.min(100, Math.max(0, Math.round((a / 10) * 100)));
+  q('meter-delta').textContent  = (delta >= 0 ? '+' : '') + delta + ' pts';
+  q('meter-scores').textContent = `(${b}/10 \u2192 ${a}/10)`;
+  q('meter-fill').style.width   = pct + '%';
+  wrap.classList.add('show');
+}
+
+// ── Explain popover ───────────────────────────────────────────────────────────
+function showExplain(key, btn) {
+  const ex = checkExplanations[key];
+  if (!ex) return;
+  q('xpop-title').textContent = ex.title;
+  q('xpop-what').textContent  = ex.what;
+  q('xpop-risk').textContent  = ex.risk;
+  q('xpop-fix').textContent   = ex.fix;
+  const pop = q('xpop');
+  pop.classList.add('show');
+  const r = btn.getBoundingClientRect();
+  let top  = r.bottom + 8;
+  let left = r.left - 130;
+  if (left < 10) left = 10;
+  if (left + 280 > window.innerWidth - 10) left = window.innerWidth - 290;
+  if (top + 200 > window.innerHeight) top = r.top - 206;
+  pop.style.top  = top  + 'px';
+  pop.style.left = left + 'px';
+  setTimeout(() => document.addEventListener('click', hideExplain, { once: true }), 0);
+}
+
+function hideExplain() { q('xpop').classList.remove('show'); }
+
+// ── Evidence modal ────────────────────────────────────────────────────────────
+function showEvidence() {
+  const bHdrs = S.before && S.before.rawHeaders ? S.before.rawHeaders : null;
+  const aHdrs = S.after  && S.after.rawHeaders  ? S.after.rawHeaders  : null;
+
+  const allKeys = Array.from(new Set([
+    ...(bHdrs ? Object.keys(bHdrs) : []),
+    ...(aHdrs ? Object.keys(aHdrs) : [])
+  ])).sort();
+
+  const body = document.getElementById('ev-body');
+  const hasBoth = bHdrs && aHdrs;
+
+  let html = `<div class="ev-grid${hasBoth ? '' : ' ev-single'}">`;
+  if (bHdrs) html += buildEvCol(allKeys, bHdrs, aHdrs, 'BEFORE Hardening', true);
+  if (aHdrs) html += buildEvCol(allKeys, aHdrs, bHdrs, 'AFTER Hardening',  false);
+  html += '</div>';
+
+  if (!hasBoth) {
+    html += '<div class="ev-note">Apply fixes to see a side-by-side BEFORE / AFTER comparison</div>';
+  }
+
+  body.innerHTML = html;
+  document.getElementById('ev-modal').classList.add('show');
+}
+
+function buildEvCol(allKeys, thisHdrs, otherHdrs, label, isBefore) {
+  const hdrCls = isBefore ? 'ev-before' : 'ev-after';
+  let html = `<div class="ev-col"><div class="ev-col-hdr ${hdrCls}">${label}</div>`;
+  allKeys.forEach(k => {
+    const tv = thisHdrs  ? (thisHdrs[k]  || null) : null;
+    const ov = otherHdrs ? (otherHdrs[k] || null) : null;
+    let rowCls = '', display = '';
+    if (tv && !ov && otherHdrs) {
+      rowCls  = isBefore ? 'ev-removed' : 'ev-added';
+      display = tv;
+    } else if (!tv && ov) {
+      rowCls  = isBefore ? '' : 'ev-removed';
+      display = isBefore
+        ? '<span class="ev-tag-missing">[MISSING]</span>'
+        : '<span class="ev-tag-removed">[REMOVED]</span>';
+    } else if (tv && ov && tv !== ov) {
+      rowCls  = 'ev-changed';
+      display = tv;
+    } else {
+      display = tv || '<span class="ev-tag-missing">[MISSING]</span>';
+    }
+    html += `<div class="ev-row ${rowCls}"><span class="ev-key">${k}:</span> <span class="ev-val">${display}</span></div>`;
+  });
+  return html + '</div>';
+}
+
+function hideEvidence(e) {
+  if (!e || e.target === document.getElementById('ev-modal')) {
+    document.getElementById('ev-modal').classList.remove('show');
+  }
+}
+
+// ── Util ──────────────────────────────────────────────────────────────────────
+function q(id) { return document.getElementById(id); }
+</script>
+<!-- Explain popover -->
+<div class="xpop" id="xpop">
+  <div class="xpop-title" id="xpop-title"></div>
+  <div class="xpop-row"><span class="xpop-lbl">What</span><span class="xpop-val" id="xpop-what"></span></div>
+  <div class="xpop-row"><span class="xpop-lbl">Risk</span><span class="xpop-val" id="xpop-risk"></span></div>
+  <div class="xpop-row"><span class="xpop-lbl">Fix</span><span class="xpop-val" id="xpop-fix"></span></div>
+</div>
+
+<!-- Architecture hint -->
+<div class="arch-hint">
+  <strong>Engine</strong>
+  <span>&#10003; Policy-driven</span>
+  <span>&#10003; Snapshot-based rollback</span>
+  <span>&#10003; Automated remediation</span>
+</div>
+
+<!-- Evidence modal -->
+<div class="modal-overlay" id="ev-modal" onclick="hideEvidence(event)">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3>&#128203; Raw HTTP Header Evidence</h3>
+      <button class="modal-close" onclick="hideEvidence()">&times;</button>
+    </div>
+    <div class="modal-body" id="ev-body"></div>
+  </div>
+</div>
+
+</body>
+</html>
