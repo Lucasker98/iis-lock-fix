@@ -11,7 +11,7 @@ The system scans a target server and identifies common security misconfiguration
 The tool evaluates the security posture of a web server and produces a structured HTML report summarizing detected issues.
 
 The report includes:
-- A security score (0–10)
+- A security score (0ï¿½10)
 - A list of detected vulnerabilities
 - Status indicators for each check
 - Technical explanations for each finding
@@ -89,3 +89,27 @@ The report provides a clear and structured view of the server's security posture
 
 - The tool can be used to analyze IIS-based servers.
 - If no target is explicitly defined, the scan may default to localhost.
+
+---
+
+## QA & Testing
+
+The project includes a three-layer automated test suite covering unit, integration, and regression scenarios.  
+Tests run without a real IIS server or Windows administrator privileges.
+
+### Quick start
+
+```bash
+pip install -r requirements-test.txt
+pytest
+```
+
+### Run by layer
+
+```bash
+pytest -m unit          # isolated logic tests
+pytest -m integration   # component pipeline tests
+pytest -m regression    # known-input stability tests
+```
+
+For full documentation see [docs/QA_TESTING.md](docs/QA_TESTING.md).

@@ -1,0 +1,89 @@
+﻿{
+    "phase":  "before",
+    "capturedAt":  "2026-04-24T17:13:47.2534146+03:00",
+    "score":  0,
+    "totalChecks":  10,
+    "issueCount":  10,
+    "checks":  [
+                   {
+                       "Check":  "HSTS",
+                       "Category":  "HTTP",
+                       "Status":  "Issue",
+                       "IsIssue":  1,
+                       "Details":  "Not configured"
+                   },
+                   {
+                       "Check":  "Clickjacking",
+                       "Category":  "HTTP",
+                       "Status":  "Issue",
+                       "IsIssue":  1,
+                       "Details":  "Vulnerable"
+                   },
+                   {
+                       "Check":  "X-Content-Type-Options",
+                       "Category":  "HTTP",
+                       "Status":  "Issue",
+                       "IsIssue":  1,
+                       "Details":  "Missing"
+                   },
+                   {
+                       "Check":  "Referrer-Policy",
+                       "Category":  "HTTP",
+                       "Status":  "Issue",
+                       "IsIssue":  1,
+                       "Details":  "Missing"
+                   },
+                   {
+                       "Check":  "Content-Security-Policy",
+                       "Category":  "HTTP",
+                       "Status":  "Issue",
+                       "IsIssue":  1,
+                       "Details":  "Missing"
+                   },
+                   {
+                       "Check":  "Server header",
+                       "Category":  "HTTP",
+                       "Status":  "Issue",
+                       "IsIssue":  1,
+                       "Details":  "Visible (Microsoft-IIS/10.0)"
+                   },
+                   {
+                       "Check":  "X-Powered-By",
+                       "Category":  "HTTP",
+                       "Status":  "Issue",
+                       "IsIssue":  1,
+                       "Details":  "Visible (ASP.NET)"
+                   },
+                   {
+                       "Check":  "AnyTlsSupported",
+                       "Category":  "TLS",
+                       "Status":  "Issue",
+                       "IsIssue":  1,
+                       "Details":  "No TLS (plain HTTP)"
+                   },
+                   {
+                       "Check":  "WeakProtocolsEnabled",
+                       "Category":  "TLS",
+                       "Status":  "Issue",
+                       "IsIssue":  1,
+                       "Details":  "CRITICAL: Plain Text (No Encryption)"
+                   },
+                   {
+                       "Check":  "ModernTlsPresent",
+                       "Category":  "TLS",
+                       "Status":  "Issue",
+                       "IsIssue":  1,
+                       "Details":  "Modern TLS missing"
+                   }
+               ],
+    "rawHeaders":  {
+                       "Accept-Ranges":  "bytes",
+                       "Content-Length":  "9692",
+                       "Content-Type":  "text/html",
+                       "Date":  "Fri, 24 Apr 2026 14:13:46 GMT",
+                       "ETag":  "\"a23f3d57e37bdc1:0\"",
+                       "Last-Modified":  "Fri, 02 Jan 2026 12:28:46 GMT",
+                       "Server":  "Microsoft-IIS/10.0",
+                       "X-Powered-By":  "ASP.NET"
+                   }
+}

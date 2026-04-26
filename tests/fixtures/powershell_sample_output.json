@@ -1,0 +1,20 @@
+{
+    "_comment": "Sample mocked PowerShell output for integration tests. Represents a partially-hardened server — HTTP headers applied but TLS not yet configured.",
+    "description": "Partially hardened IIS server (HTTP headers OK, TLS pending)",
+    "checks": [
+        { "Check": "HSTS",                    "Category": "HTTP", "Status": "OK",    "IsIssue": 0, "Details": "Enabled" },
+        { "Check": "Clickjacking",            "Category": "HTTP", "Status": "OK",    "IsIssue": 0, "Details": "Protected" },
+        { "Check": "X-Content-Type-Options",  "Category": "HTTP", "Status": "Issue", "IsIssue": 1, "Details": "Missing" },
+        { "Check": "Referrer-Policy",         "Category": "HTTP", "Status": "OK",    "IsIssue": 0, "Details": "Configured" },
+        { "Check": "Content-Security-Policy", "Category": "HTTP", "Status": "Issue", "IsIssue": 1, "Details": "Missing" },
+        { "Check": "Server header",           "Category": "HTTP", "Status": "OK",    "IsIssue": 0, "Details": "Hidden" },
+        { "Check": "X-Powered-By",            "Category": "HTTP", "Status": "OK",    "IsIssue": 0, "Details": "Hidden" }
+    ],
+    "nmap_tls_output": "| ssl-enum-ciphers:\n|   TLSv1.2:\n|     ciphers:\n|       TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 (ecdh_x25519) - A\n|   TLSv1.3:\n|     ciphers:\n|       TLS_AKE_WITH_AES_256_GCM_SHA384 (ecdh_x25519) - A",
+    "rawHeaders": {
+        "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+        "X-Frame-Options":           "DENY",
+        "Referrer-Policy":           "strict-origin-when-cross-origin",
+        "Content-Type":              "text/html"
+    }
+}

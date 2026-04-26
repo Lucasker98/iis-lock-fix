@@ -1,0 +1,30 @@
+{
+    "_comment": "Synthetic AFTER-hardening snapshot. Reflects what Invoke-ApplyFixes() produces when policy.json headers are injected and removeServerHeader=true. TLS checks remain issues because the demo site runs on plain HTTP.",
+    "phase": "after",
+    "capturedAt": "2026-04-24T17:30:00.0000000+03:00",
+    "score": 7.0,
+    "totalChecks": 10,
+    "issueCount": 3,
+    "checks": [
+        { "Check": "HSTS",                    "Category": "HTTP", "Status": "OK",    "IsIssue": 0, "Details": "Enabled" },
+        { "Check": "Clickjacking",            "Category": "HTTP", "Status": "OK",    "IsIssue": 0, "Details": "Protected" },
+        { "Check": "X-Content-Type-Options",  "Category": "HTTP", "Status": "OK",    "IsIssue": 0, "Details": "Enabled (nosniff)" },
+        { "Check": "Referrer-Policy",         "Category": "HTTP", "Status": "OK",    "IsIssue": 0, "Details": "Configured" },
+        { "Check": "Content-Security-Policy", "Category": "HTTP", "Status": "OK",    "IsIssue": 0, "Details": "Enabled" },
+        { "Check": "Server header",           "Category": "HTTP", "Status": "OK",    "IsIssue": 0, "Details": "Hidden" },
+        { "Check": "X-Powered-By",            "Category": "HTTP", "Status": "OK",    "IsIssue": 0, "Details": "Hidden" },
+        { "Check": "AnyTlsSupported",         "Category": "TLS",  "Status": "Issue", "IsIssue": 1, "Details": "No TLS (plain HTTP)" },
+        { "Check": "WeakProtocolsEnabled",    "Category": "TLS",  "Status": "Issue", "IsIssue": 1, "Details": "CRITICAL: Plain Text (No Encryption)" },
+        { "Check": "ModernTlsPresent",        "Category": "TLS",  "Status": "Issue", "IsIssue": 1, "Details": "Modern TLS missing" }
+    ],
+    "rawHeaders": {
+        "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+        "X-Frame-Options":           "DENY",
+        "Content-Security-Policy":   "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
+        "X-Content-Type-Options":    "nosniff",
+        "Referrer-Policy":           "strict-origin-when-cross-origin",
+        "Permissions-Policy":        "geolocation=(), microphone=(), camera=()",
+        "Content-Type":              "text/html",
+        "Accept-Ranges":             "bytes"
+    }
+}
