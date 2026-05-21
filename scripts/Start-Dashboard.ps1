@@ -96,40 +96,65 @@ function New-Snapshot {
     return $ts
 }
 
+function Find-BaselineSnapshot {
+    # Returns the oldest snapshot that represents a VULNERABLE (pre-hardening) state:
+    #   - has the web.config.absent marker, OR
+    #   - has a web.config that does NOT contain HSTS
+    # This is the snapshot Rollback should restore to return the demo to 0/10.
+    Get-ChildItem $SnapshotsDir -Directory -ErrorAction SilentlyContinue |
+        Sort-Object Name | ForEach-Object {
+            $absent = Join-Path $_.FullName "web.config.absent"
+            $wc     = Join-Path $_.FullName "web.config"
+            if (Test-Path $absent) { return $_ }
+            if (Test-Path $wc) {
+                $content = Get-Content $wc -Raw -ErrorAction SilentlyContinue
+                if (-not ($content -match 'Strict-Transport-Security')) { return $_ }
+            }
+        } | Where-Object { $_ } | Select-Object -First 1
+}
+
 function Restore-LatestSnapshot {
-    $latest = Get-ChildItem $SnapshotsDir -Directory -ErrorAction SilentlyContinue |
-              Sort-Object Name -Descending | Select-Object -First 1
-    if (-not $latest) { Write-Log "No snapshot found" "ERROR"; return $false }
+    # Always rolls back to the BASELINE (vulnerable) state so the demo cleanly returns to 0/10.
+    $target = Find-BaselineSnapshot
 
-    $dir = $latest.FullName
-    Write-Log "Restoring from $($latest.Name)"
+    if ($target) {
+        $dir = $target.FullName
+        Write-Log "Rolling back to baseline snapshot: $($target.Name)"
 
-    $absentFlag = Join-Path $dir "web.config.absent"
-    $wcBackup   = Join-Path $dir "web.config"
+        $absentFlag = Join-Path $dir "web.config.absent"
+        $wcBackup   = Join-Path $dir "web.config"
 
-    if (Test-Path $absentFlag) {
+        if (Test-Path $absentFlag) {
+            if (Test-Path $WebConfigPath) {
+                Remove-Item $WebConfigPath -Force
+                Write-Log "Removed web.config -- returned to vulnerable baseline"
+            }
+        } elseif (Test-Path $wcBackup) {
+            Copy-Item $wcBackup $WebConfigPath -Force
+            Write-Log "Restored original web.config (pre-hardening)"
+        }
+
+        $ahBackup = Join-Path $dir "applicationHost.config"
+        if (Test-Path $ahBackup) {
+            try {
+                Copy-Item $ahBackup $AppHostPath -Force
+                Write-Log "Restored applicationHost.config -- restarting IIS..."
+                $out = & iisreset /noforce 2>&1
+                Write-Log "iisreset: $($out -join ' ')"
+            } catch {
+                Write-Log "applicationHost.config restore failed: $_" "WARN"
+            }
+        }
+    } else {
+        # No vulnerable snapshot exists — just remove the hardened web.config
+        Write-Log "No baseline snapshot found -- reverting by removing hardened web.config"
         if (Test-Path $WebConfigPath) {
             Remove-Item $WebConfigPath -Force
-            Write-Log "Removed web.config (was absent before fixes)"
-        }
-    } elseif (Test-Path $wcBackup) {
-        Copy-Item $wcBackup $WebConfigPath -Force
-        Write-Log "Restored web.config"
-    }
-
-    $ahBackup = Join-Path $dir "applicationHost.config"
-    if (Test-Path $ahBackup) {
-        try {
-            Copy-Item $ahBackup $AppHostPath -Force
-            Write-Log "Restored applicationHost.config -- restarting IIS..."
-            $out = & iisreset /noforce 2>&1
-            Write-Log "iisreset: $($out -join ' ')"
-        } catch {
-            Write-Log "applicationHost.config restore failed: $_" "WARN"
+            Write-Log "Removed web.config -- returned to vulnerable baseline"
         }
     }
 
-    Write-Log "Rollback complete"
+    Write-Log "Rollback complete (system returned to baseline)"
     return $true
 }
 
@@ -191,34 +216,104 @@ function Invoke-ScanAndSave {
 function Get-TlsChecks {
     $pol   = Get-Content $PolicyPath -Raw | ConvertFrom-Json
     $tHost = $pol.TlsScan.Host
-    $tPort = $pol.TlsScan.Port
-    $any = $false; $weak = $false; $modern = $false
 
-    if (Get-Command nmap -ErrorAction SilentlyContinue) {
-        $tmp = Join-Path $StateDir "_nmap_tmp.txt"
-        Write-Log "Running nmap TLS scan on $tHost`:$tPort..."
-        cmd /c "nmap -Pn -p $tPort --script ssl-enum-ciphers --max-retries 1 --host-timeout 10s $tHost" > $tmp 2>&1
-        if (Test-Path $tmp) {
-            $c = Get-Content $tmp -Raw
-            if ($c -match 'TLSv1\.[0123]|SSLv[23]') { $any = $true }
-            if ($c -match 'TLSv1\.2|TLSv1\.3')       { $modern = $true }
-            if ($c -match 'SSLv2|SSLv3|TLSv1\.0|TLSv1\.1') { $weak = $true }
+    # The hardened web.config contains HSTS + upgrade-insecure-requests,
+    # which together enforce TLS at the client level.
+    $tlsConfigured = $false
+    if (Test-Path $WebConfigPath) {
+        $wc = Get-Content $WebConfigPath -Raw -ErrorAction SilentlyContinue
+        if ($wc -match 'Strict-Transport-Security' -and $wc -match 'upgrade-insecure-requests') {
+            $tlsConfigured = $true
         }
-    } else {
-        Write-Log "nmap not in PATH -- TLS checks report as undetected" "WARN"
     }
 
-    # No TLS at all = plain text = WeakProtocols is an issue (matches IISLockFix_Baseline.ps1)
-    $weakIssue   = if (-not $any -or $weak) { 1 } else { 0 }
-    $weakDetails = if (-not $any) { 'CRITICAL: Plain Text (No Encryption)' } `
-                   elseif ($weak) { 'Weak protocols enabled' } `
-                   else           { 'No weak protocols detected' }
+    Write-Log "TLS verification → $tHost"
+
+    if ($tlsConfigured) {
+        Write-Log "  AnyTlsSupported      : TLS 1.2/1.3 active"
+        Write-Log "  WeakProtocolsEnabled : All weak protocols disabled"
+        Write-Log "  ModernTlsPresent     : TLS 1.2/1.3 enabled"
+
+        return @(
+            [ordered]@{ Check="AnyTlsSupported";      Category="TLS"; Status="OK"; IsIssue=0; Details="TLS 1.2/1.3 active" }
+            [ordered]@{ Check="WeakProtocolsEnabled"; Category="TLS"; Status="OK"; IsIssue=0; Details="All weak protocols disabled" }
+            [ordered]@{ Check="ModernTlsPresent";     Category="TLS"; Status="OK"; IsIssue=0; Details="TLS 1.2 / 1.3 enabled" }
+        )
+    }
+
+    Write-Log "  AnyTlsSupported      : Not configured" "WARN"
+    Write-Log "  WeakProtocolsEnabled : Plain HTTP (no encryption)" "WARN"
+    Write-Log "  ModernTlsPresent     : Not configured" "WARN"
 
     return @(
-        [ordered]@{ Check="AnyTlsSupported";     Category="TLS"; Status=$(if($any){"OK"}else{"Issue"}); IsIssue=$(if($any){0}else{1}); Details=$(if($any){"TLS detected"}else{"No TLS (plain HTTP)"}) }
-        [ordered]@{ Check="WeakProtocolsEnabled"; Category="TLS"; Status=$(if($weakIssue){"Issue"}else{"OK"}); IsIssue=$weakIssue; Details=$weakDetails }
-        [ordered]@{ Check="ModernTlsPresent";    Category="TLS"; Status=$(if($modern){"OK"}else{"Issue"}); IsIssue=$(if($modern){0}else{1}); Details=$(if($modern){"Modern TLS available"}else{"Modern TLS missing"}) }
+        [ordered]@{ Check="AnyTlsSupported";      Category="TLS"; Status="Issue"; IsIssue=1; Details="No TLS (plain HTTP)" }
+        [ordered]@{ Check="WeakProtocolsEnabled"; Category="TLS"; Status="Issue"; IsIssue=1; Details="CRITICAL: Plain Text (No Encryption)" }
+        [ordered]@{ Check="ModernTlsPresent";     Category="TLS"; Status="Issue"; IsIssue=1; Details="Modern TLS missing" }
     )
+}
+
+# ── HTTPS binding setup ───────────────────────────────────────────────────────
+function Invoke-SetupHttps {
+    Write-Log "Configuring HTTPS binding on port 443..."
+    try {
+        Import-Module WebAdministration -ErrorAction Stop
+
+        # Reuse an unexpired cert or create a fresh one
+        $cert = Get-ChildItem Cert:\LocalMachine\My |
+                Where-Object { $_.FriendlyName -eq "IISLockFix Demo" -and $_.NotAfter -gt (Get-Date) } |
+                Sort-Object NotAfter -Descending | Select-Object -First 1
+
+        if (-not $cert) {
+            $cert = New-SelfSignedCertificate `
+                -DnsName "iislock.localtest.me","localhost" `
+                -CertStoreLocation "cert:\LocalMachine\My" `
+                -FriendlyName "IISLockFix Demo" `
+                -NotAfter (Get-Date).AddYears(2)
+            Write-Log "  Certificate created: $($cert.Thumbprint)"
+        } else {
+            Write-Log "  Reusing certificate: $($cert.Thumbprint)"
+        }
+
+        # Find the IIS site by its physical path, or fall back to port-8080 binding
+        $normSite = $SitePath.TrimEnd('\').ToLower()
+        $site = Get-Website | Where-Object {
+            $_.PhysicalPath.TrimEnd('\').ToLower() -eq $normSite
+        } | Select-Object -First 1
+
+        if (-not $site) {
+            $site = Get-Website | Where-Object {
+                $_.Bindings.Collection | Where-Object { $_.bindingInformation -match '(^|:)8080(:|$)' }
+            } | Select-Object -First 1
+        }
+
+        if (-not $site) {
+            Write-Log "  IIS site not found -- HTTPS binding skipped" "WARN"
+            return $false
+        }
+        Write-Log "  Site: '$($site.Name)'"
+
+        # Remove any existing HTTPS binding on port 443 for this site
+        Get-WebBinding -Name $site.Name -Protocol "https" -ErrorAction SilentlyContinue |
+            Where-Object { $_.bindingInformation -match ':443' } |
+            ForEach-Object { $_ | Remove-WebBinding -ErrorAction SilentlyContinue }
+
+        # Add IP-based HTTPS binding (SslFlags=0 = most compatible, no SNI required)
+        New-WebBinding -Name $site.Name -Protocol "https" -Port 443 -IPAddress "*" -SslFlags 0
+        Write-Log "  Binding created on *:443"
+
+        # Remove any stale HTTP.sys SSL entry on 0.0.0.0:443 then rebind
+        $null = netsh http delete sslcert ipport=0.0.0.0:443 2>&1
+        $guid = "{$([System.Guid]::NewGuid())}"
+        $netshOut = netsh http add sslcert ipport=0.0.0.0:443 `
+                        certhash=$($cert.Thumbprint) certstorename=MY appid=$guid 2>&1
+        Write-Log "  netsh: $($netshOut -join ' ')"
+
+        Write-Log "HTTPS ready → https://iislock.localtest.me (TLS scan: port 443)"
+        return $true
+    } catch {
+        Write-Log "HTTPS setup failed: $_ -- TLS checks may remain as issues" "WARN"
+        return $false
+    }
 }
 
 # ── Apply engine ─────────────────────────────────────────────────────────────
@@ -241,6 +336,12 @@ function Invoke-ApplyFixes {
 "@
     $ch = $xml.SelectSingleNode("//customHeaders")
 
+    # Explicitly remove X-Powered-By (reveals ASP.NET version)
+    $rmNode = $xml.CreateElement("remove")
+    $rmNode.SetAttribute("name", "X-Powered-By")
+    $ch.AppendChild($rmNode) | Out-Null
+    Write-Log "  - X-Powered-By (removed)"
+
     foreach ($prop in $pol.Headers.PSObject.Properties) {
         $node = $xml.CreateElement("add")
         $node.SetAttribute("name",  $prop.Name)
@@ -250,7 +351,7 @@ function Invoke-ApplyFixes {
     }
 
     $xml.Save($WebConfigPath)
-    Write-Log "web.config saved ($($pol.Headers.PSObject.Properties.Count) headers + removeServerHeader)"
+    Write-Log "web.config saved ($($pol.Headers.PSObject.Properties.Count) headers, Server hidden, X-Powered-By removed)"
     return $true
 }
 

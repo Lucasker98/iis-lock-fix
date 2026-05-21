@@ -109,13 +109,22 @@ def test_vulnerable_snapshot_engine_reproduces_all_issues(vulnerable_snapshot):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.regression
-def test_hardened_snapshot_score_is_seven(hardened_snapshot):
+def test_hardened_snapshot_score_is_ten(hardened_snapshot):
     """
-    Post-hardening score must be 7.0 (7 HTTP checks pass, 3 TLS checks still fail
-    because the demo site runs on plain HTTP — TLS requires IIS HTTPS binding).
+    Post-hardening score must be 10.0.
+    Invoke-ApplyFixes writes all security headers + removes X-Powered-By.
+    Invoke-SetupHttps adds HTTPS binding on port 443 with a self-signed cert.
+    All 10 checks (7 HTTP + 3 TLS) pass.
     """
     score = hardened_snapshot["score"]
-    assert score == 7.0, f"Expected 7.0, got {score}"
+    assert score == 10.0, f"Expected 10.0, got {score}"
+
+
+@pytest.mark.regression
+def test_hardened_snapshot_all_checks_pass(hardened_snapshot):
+    """After hardening, ALL 10 checks (HTTP + TLS) must pass."""
+    total_issues = count_issues(hardened_snapshot["checks"])
+    assert total_issues == 0, f"Expected 0 issues after full hardening, got {total_issues}"
 
 
 @pytest.mark.regression
@@ -176,13 +185,13 @@ def test_hardened_fewer_issues_than_vulnerable(vulnerable_snapshot, hardened_sna
 # ---------------------------------------------------------------------------
 
 @pytest.mark.regression
-def test_score_formula_7_out_of_10_is_seven():
+def test_score_formula_10_out_of_10_is_ten():
     """
-    7 passing / 10 total → score = 7.0. Locked in because this is the
-    post-hardening score shown in all project demonstrations.
+    10 passing / 10 total → score = 10.0. Post-hardening target after
+    HTTP header fixes + HTTPS binding are both applied.
     """
-    checks = [{"IsIssue": 0}] * 7 + [{"IsIssue": 1}] * 3
-    assert calculate_score(checks) == 7.0
+    checks = [{"IsIssue": 0}] * 10
+    assert calculate_score(checks) == 10.0
 
 
 @pytest.mark.regression

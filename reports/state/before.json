@@ -1,6 +1,6 @@
 ﻿{
     "phase":  "before",
-    "capturedAt":  "2026-04-24T17:13:47.2534146+03:00",
+    "capturedAt":  "2026-05-21T14:04:20.9404690+03:00",
     "score":  0,
     "totalChecks":  10,
     "issueCount":  10,
@@ -80,7 +80,7 @@
                        "Accept-Ranges":  "bytes",
                        "Content-Length":  "9692",
                        "Content-Type":  "text/html",
-                       "Date":  "Fri, 24 Apr 2026 14:13:46 GMT",
+                       "Date":  "Thu, 21 May 2026 11:04:20 GMT",
                        "ETag":  "\"a23f3d57e37bdc1:0\"",
                        "Last-Modified":  "Fri, 02 Jan 2026 12:28:46 GMT",
                        "Server":  "Microsoft-IIS/10.0",

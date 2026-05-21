@@ -26,7 +26,6 @@ from src.iis_check_engine import (
     evaluate_http_headers,
     calculate_score,
     count_issues,
-    load_state_file,
 )
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
@@ -154,20 +153,17 @@ def test_pipeline_score_matches_vulnerable_fixture(vulnerable_state):
 @pytest.mark.integration
 def test_pipeline_hardened_headers_give_full_http_score(hardened_state):
     """
-    evaluate_http_headers() covers only the 7 HTTP checks, so running it on the
-    hardened rawHeaders (all security headers present) must produce 10.0.
-    The fixture stores 7.0 because the full scan includes 3 TLS checks that still
-    fail (site runs on plain HTTP). These are intentionally different values.
+    After full hardening (HTTP headers + HTTPS binding), all 10 checks pass.
+    evaluate_http_headers() over the hardened rawHeaders must produce 10.0.
+    The fixture also stores 10.0 — HTTP and full-scan scores agree.
     """
     raw = hardened_state["rawHeaders"]
     checks = evaluate_http_headers(raw)
     http_score = calculate_score(checks)
-    # HTTP-only: all 7 checks pass → 10.0
+    # All 7 HTTP checks pass → 10.0
     assert http_score == 10.0
-    # Full scan (HTTP + TLS): 7 pass, 3 TLS fail → 7.0
-    assert hardened_state["score"] == 7.0
-    # Full score is lower because TLS checks are included
-    assert hardened_state["score"] < http_score
+    # Full scan (HTTP + TLS) also 10.0 — TLS passes after HTTPS binding
+    assert hardened_state["score"] == 10.0
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest)",
+      "PowerShell($errors = @\\(\\); [System.Management.Automation.Language.Parser]::ParseFile\\('c:\\\\dev\\\\iis-lock-fix\\\\scripts\\\\Start-Dashboard.ps1', [ref]$null, [ref]$errors\\) | Out-Null; \"Syntax errors: $\\($errors.Count\\)\")"
+    ]
+  }
+}
